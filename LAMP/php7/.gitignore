@@ -1,0 +1,5 @@
+vendor
+
+.docker/database/*
+!.docker/database/seed.sql.gz
+!.docker/database/README.md

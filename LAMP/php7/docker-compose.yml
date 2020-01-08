@@ -1,0 +1,51 @@
+version: '3.3'
+
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - '80:80'
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  web:
+    build:
+      context: .
+      dockerfile: .docker/web/Dockerfile
+    volumes:
+      - './:/var/www/html:delegated'
+      - /var/www/html/vendor/
+    working_dir: /var/www/html/public
+    environment:
+      XDEBUG_CONFIG: remote_host=host.docker.internal
+      VIRTUAL_HOST: ${VHOST}
+    depends_on:
+      - db
+
+  db:
+    image: mysql:5.7
+    ports:
+      - '6033:3306'
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - VIRTUAL_HOST=db.${VHOST}
+    expose:
+      - '3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./.docker/database:/docker-entrypoint-initdb.d
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    links:
+      - db:db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_USER=${DB_USERNAME}
+      - VIRTUAL_HOST=phpmyadmin.${VHOST}
+
+volumes:
+  mysql_data:
